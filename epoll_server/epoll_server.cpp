@@ -24,7 +24,7 @@ int main() {
 	//将本地端口转换为网络序（小端转大端）
 	srv_addr.sin_port = htons(SERV_PORT);
 	//转换IP  宏INADDR_ANY取可用任意IP
-	srv_addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+	srv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
 	//设置端口复用
 	int opt=1;
@@ -35,7 +35,7 @@ int main() {
 
 	//设置监听数 默认128
 	Listen(lfd,32);
-	
+
 	//创建epoll句柄
 	ssize_t nready,efd,res;
 	efd = epoll_create(128);
@@ -45,7 +45,7 @@ int main() {
 	//文件描述符加入epoll
 	temp.events = EPOLLIN;
 	temp.data.fd = lfd;
-  res = epoll_ctl(efd,EPOLL_CTL_ADD,lfd,&temp);	
+  res = epoll_ctl(efd,EPOLL_CTL_ADD,lfd,&temp);
 	if(res == -1)
 		perr_exit("epoll_ctl error");
 	while(1) {
@@ -74,7 +74,7 @@ int main() {
 				res = epoll_ctl(efd,EPOLL_CTL_ADD,cfd,&temp);
 				if(res == -1)
 					perr_exit("epoll_ctl_error");
-			} 
+			}
 			//监听的客户端连接
 			else {
 				char buf[BUFSIZ];
@@ -84,22 +84,22 @@ int main() {
 				//读取为0时说明客户端关闭连接
 				if(n == 0) {
 					res = epoll_ctl(efd,EPOLL_CTL_DEL,sfd,NULL);
-					if(res == -1) 
+					if(res == -1)
 						perr_exit("epoll_ctl error");
 					close(sfd);
 					printf("client %d closed connection\n",sfd);
-			
+
 				}
 				else if(n<0) {
 					perror("read n<0 error:") ;
 					res = epoll_ctl(efd,EPOLL_CTL_DEL,sfd,NULL);
 					close(sfd);
 				}
-				else {					
+				else {
 					for(int i=0;i<n;i++)
 						buf[i] = toupper(buf[i]);
 					write(STDOUT_FILENO,buf,n);
-					write(cfd,buf,n);
+					write(sfd,buf,n);
 				}
 			}
 		}
@@ -108,4 +108,3 @@ int main() {
 	close(efd);
 	return 0;
 }
-
