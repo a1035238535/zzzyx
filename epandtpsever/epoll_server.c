@@ -124,6 +124,8 @@ void *process(void *arg) {
 		// write(STDOUT_FILENO,buf,n);
 		// write(*sfd,buf,n);
 		HTTPServer(sfd,buf);
+		// res = epoll_ctl(efd,EPOLL_CTL_DEL,*sfd,NULL);
+		// close(*sfd);
 	}
 }
 
@@ -139,7 +141,7 @@ void HTTPServer(int *sfd,char* arg) {
 	int pos=0,i=0;
 	//获取请求的方法
 
-	printf("%s\n\n",buf);
+	//printf("%s\n\n",buf);
 
 	for(i=0;buf[pos]!=' ';i++,pos++)
 		method[i] = buf[pos];
@@ -174,11 +176,25 @@ void HTTPServer(int *sfd,char* arg) {
     lseek(fd,0,SEEK_SET);
 	printf("file size = %ld\n",size);
 	send_head(*sfd,size,content_type);
-	bzero(send_buf,sizeof(send_buf));
-	read(fd,send_buf,sizeof(send_buf));
-	//printf("%s",send_buf);
-	write(*sfd,send_buf,size);
-	//write(*sfd,"\r\n",2);
+	int ret =0;
+	while((ret = read(fd,send_buf,sizeof(send_buf)))!=0)
+	{
+		//printf("read %d byte\n",ret);
+		if(ret == -1){
+			printf("read error: ");
+			break;
+		}
+		ret = write(*sfd,send_buf,ret);
+		if(ret == -1) {
+			//滑动窗口不够 休眠等待处理
+			usleep(5000);
+			perror("write error :");
+			//epoll_ctl(efd,EPOLL_CTL_DEL,*sfd,NULL);
+			//close(*sfd);
+			//break;
+		}
+	}
+	printf("close fd %d\n",fd);
 	close(fd);
 	return;
 }
